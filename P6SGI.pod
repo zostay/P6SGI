@@ -1,4 +1,6 @@
-=NAME P6SGI - Perl 6 Web Server Gateway Interface Specification
+=head1 NAME 
+
+P6SGI - Perl 6 Web Server Gateway Interface Specification
 
 =begin pod
 
