@@ -1,6 +1,8 @@
-=NAME P6SGI - Perl 6 Web Server Gateway Interface Specification
+=encoding utf8
 
-=begin pod
+=head1 NAME
+
+P6SGI - Perl 6 Web Server Gateway Interface Specification
 
 =head1 STATUS
 
@@ -14,6 +16,8 @@ This document standardizes the interface to be implemented by web application de
 
 This standard has the following goals:
 
+=over 1
+
 =item Standardize the interface between server and application so that web developers may focus on application development rather than the nuances of supporting each of several server platforms.
 
 =item Keep the interface simple so that a web application or middleware requires no additional tools or libraries other than what exists in a standard Perl 6 environment, no module installations are required.
@@ -22,37 +26,45 @@ This standard has the following goals:
 
 =item Allow the interface to flexible enough to accomodate a variety of common use-cases and simple optimzations.
 
-=item Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
+=item 
+
+Provide flexibility so that unanticipated use-cases may be implemented and so that the interface may be extended by servers wishing to do so.
+
+=back
 
 Aside from that is the underlying assumption that this is a simple interface and ought to at least somewhat resemble work in the standards it is derived from, including [Rack](http://www.rubydoc.info/github/rack/rack/master/file/SPEC), [WSGI](https://www.python.org/dev/peps/pep-0333/), [PSGI](https://metacpan.com/pod/PSGI), [CGI](http://www.w3.org/CGI/), and others.
 
 =head1 1 TERMINOLOGY
 
-A D<P6SGI application> is a Perl 6 routine that expects to receive an environment from an I<application server> and returns a response each time it is called by the server.
+A I<P6SGI application> is a Perl 6 routine that expects to receive an environment from an I<application server> and returns a response each time it is called by the server.
 
-A D<Web Server> is an application that processes requests and responses according to the HTTP or related protocol.
+A I<Web Server> is an application that processes requests and responses according to the HTTP or related protocol.
 
-The D<origin> is the external entity that makes a given request and/or expects a response from the application server. This can be thought of generically as a web browser, bot, or other user agent.
+The I<origin> is the external entity that makes a given request and/or expects a response from the application server. This can be thought of generically as a web browser, bot, or other user agent.
 
-An D<application server> is a program that is able to provide an environment to a I<P6SGI application> and process the value returned from such an application.
+An I<application server> is a program that is able to provide an environment to a I<P6SGI application> and process the value returned from such an application.
 
 The I<application server> might be associated with a I<web server>, might itself be a I<web server>, might process a protocol used to communicate with a I<web server> (such as CGI or FastCGI), or may be something else entirely not related to a I<web server> (such as a tool for testing I<P6SGI applications>).
 
-D<Middleware> is a I<P6SGI application> that wraps another I<P6SGI application> for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
+I<Middleware> is a I<P6SGI application> that wraps another I<P6SGI application> for the purpose of performing some auxiliary task such as preprocessing request environments, logging, postprocessing responses, etc.
 
-A D<framework developer> is a developer who writes an I<application server>.
+A I<framework developer> is a developer who writes an I<application server>.
 
-An D<application developer> is a developer who writes a I<P6SGI application>.
+An I<application developer> is a developer who writes a I<P6SGI application>.
 
 =head1 2 SPECIFICATION
 
 This specification is divided into three layers:
+
+=over
 
 =item Layer 0: Server
 
 =item Layer 1: Middleware
 
 =item Layer 2: Application
+
+=back
 
 Each layer has a specific role related the other layers. The server layer is primarily responsible for managing the application lifecycle and performing the low-level protocol handling aspects. The application layer is primarily responsible for receiving metadata and content from the server and delivering metadata and content back to the server. The middleware layer is responsible for enhancing the application or server by providing additional services and utilities.
 
@@ -196,9 +208,13 @@ The server or middleware or the application may store its own data in the enviro
 
 The following prefixes are reserved for use by this standard:
 
+=over
+
 =item C<p6sgi.> is for P6SGI core standard environment.
 
 =item C<p6sgix.> is for P6SGI standard extensions to the environment.
+
+=back
 
 =head3 2.0.2 The Input Stream
 
@@ -214,11 +230,15 @@ The error stream MUST be given in the environment via C<p6sgi.errors>. This MUST
 
 A P6SGI application typically returns a L<Promise>. This Promise is kept with a L<Capture> which contains 3 positional arguments: the status code, the headers, and the message body, respectively.
 
+=over
+
 =item The status code is returned as an integer matching one of the standard HTTP status codes (e.g., 200 for success, 500 for error, 404 for not found, etc.).
 
 =item The headers are returned as a List of Pairs mapping header names to header values.
 
 =item The response payload is returned as a L<Supply> that emits zero or more objects. The server MUST handle any L<Cool> or L<Blob> that are emitted as part of the message payload. In addition to Cool and Blob, servers may also received L<List>s of L<Pair>s to allow applications to embed trailing headers, and L<Associative> objects containing protocol-specific messages and options.
+
+=back
 
 Here's an example of such a typical application:
 
@@ -356,13 +376,17 @@ All the encoding issues in 2.0.5 and 2.2.5 need to be considered.
 
 Special care needs to be taken when middleware needs to process the application body. In such cases, the middleware MUST deal with the possibility of needing to encode the characters being supplied. In such cases, middleware MUST do its best to handle encoding as servers are required:
 
-=item1 Any L<Blob> data SHOULD be passed through as-is.
+=over
 
-=item1 Any non-Blob SHOULD be stringified using L<Str> or the unary C<~> prefix.
+=item Any L<Blob> data SHOULD be passed through as-is.
 
-=item1 Middleware SHOULD examine the charset value of the Content-Type header and prefer that encoding.
+=item Any non-Blob SHOULD be stringified using L<Str> or the unary C<~> prefix.
 
-=item1 If no charset is present or the middleware does not implementing charset handling, the middleware MUST encode using the value in C<p6sgi.body.encoding>.
+=item Middleware SHOULD examine the charset value of the Content-Type header and prefer that encoding.
+
+=item If no charset is present or the middleware does not implementing charset handling, the middleware MUST encode using the value in C<p6sgi.body.encoding>.
+
+=back
 
 The application is permitted to emit any object as part of the response payload so long as some middleware maps those objects into the types the application server is required to support: L<Cool>, L<Blob>, L<List> of L<Pairs>, and L<Associative>. The latter two must be appropriate for the protocol being communicated.
 
@@ -434,11 +458,15 @@ A trivial P6SGI application could be implemented like this:
 
 In detail, an application MUST return a L<Promise> or an object that may coerce into a Promise (i.e., it has a C<Promise> method that takes no arguments and returns a Promise object). This Promise MUST be kept with a Capture or object that coerces into a Capture (e.g., a L<List> or an L<Array>). It MUST contain 3 positional arguments, which are, respectively, the status code, the list of headers, and the message body. These are each defined as follows:
 
+=over
+
 =item The status code MUST be an L<Int> or object that coerces to an Int. It MUST be a valid HTTP status code.
 
 =item The headers MUST be a L<List> of L<Pair>s naming the headers to the application intends to return. The application MAY return the same header name multiple times.
 
 =item The message body MUST be a L<Supply> that typically emits L<Cool> and L<Blob> and L<List> of L<Pair> and L<Associative> objects or an object that coerces into such a Supply (e.g., a List or an Array).
+
+=back
 
 For example, here is another example that demonstrates the flexibility possible in the application response:
 
@@ -468,13 +496,25 @@ The application may emit any object to the returned L<Supply> to be part of the 
 
 The server is expected to process the following emitted objects:
 
-=item L<Blob>. When sending the response payload to the server, the application SHOULD prefer to use Blob objects for the main data payload. This allows the application to fully control the encoding of any text being sent.
+=over 1
 
-=item L<Cool>. It is also possible for the application to use Cool instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6sgi.body.encoding> key of the environment. Application servers and middleware recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
+=item 
 
-=item L<List> of L<Pair>s. Some response payloads may require an additional set of trailing headers. This allows for additional headers to be sent after the payload.
+L<Blob>. When sending the response payload to the server, the application SHOULD prefer to use Blob objects for the main data payload. This allows the application to fully control the encoding of any text being sent.
 
-=item L<Associative>. Some web protocols require custom options and messages. These are passed from application to server using Associative objects (usually a L<Hash>).
+=item
+
+L<Cool>. It is also possible for the application to use Cool instances, but this puts the server in charge of stringifying and encoding the response. The server is only required to encode the data according to the encoding specified in the C<p6sgi.body.encoding> key of the environment. Application servers and middleware recommended to examine the C<charset> of the Content-Type header returned by the application, but are not required to do so.
+
+=item
+
+L<List> of L<Pair>s. Some response payloads may require an additional set of trailing headers. This allows for additional headers to be sent after the payload.
+
+=item
+
+L<Associative>. Some web protocols require custom options and messages. These are passed from application to server using Associative objects (usually a L<Hash>).
+
+=back
 
 Applications SHOULD avoid characters that require encoding in HTTP headers.
 
@@ -488,11 +528,21 @@ The C<p6sgix.header.done> environment variable, if provided, MUST be a vowed L<P
 
 This is not an exhaustive list, but here are a few possible reasons why this Promise MAY be broken:
 
-=item The headers are invalid and the application server will not send them.
+=over 1
 
-=item An internal error occurred in the application server.
+=item
 
-=item The client hungup the connection before the headers could be sent.
+The headers are invalid and the application server will not send them.
+
+=item
+
+An internal error occurred in the application server.
+
+=item
+
+The client hungup the connection before the headers could be sent.
+
+=back
 
 =head2 3.1 Body Done
 
@@ -502,9 +552,13 @@ This is not an exhaustive list, but here are a few possible reasons why this Pro
 
 See also 3.7.
 
+=over
+
 =item The application server has already transmitted C<Content-Length>, but the application continued to send bytes after that point.
 
 =item The client hungup the connection before it finished sending the response.
+
+=back
 
 =head2 3.2 Raw Socket
 
@@ -614,6 +668,8 @@ Most application servers will implement some aspects of HTTP/1.1. Again, this as
 
 Any application server implementing HTTP/2 MUST adhere to the requirements described above with the following additional requirements:
 
+=over
+
 =item The C<SERVER_PROTOCOL> MUST be set to "HTTP/2".
 
 =item The environment MUST contain a variable named C<p6sgix.h2.push-promise>. This MUST be a L<Supply> that the application MAY use to initiate any C<PUSH_PROMISE> frames related to the current response.
@@ -622,9 +678,13 @@ Any application server implementing HTTP/2 MUST adhere to the requirements descr
 
 =item The server MUST encode outgoing data emitted by the application into HTTP/2 frames as appropriate.
 
+=back
+
 =head3 4.3 WebSocket
 
 Any application server implementing WebSocket MUST adhere to all the requirements described above with the following modifications:
+
+=over
 
 =item The C<SERVER_PROTOCOL> MUST be set to "WebSocket/13".
 
@@ -632,9 +692,13 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item The server MUST encode frames emitted by the application in the message payload as data frames sent to the client. The frames MUST be separated out as emitted by the application without any buffering or concatenation.
 
+=back
+
 =head1 Changes
 
 =head2 0.6.Draft
+
+=over
 
 =item Added Protocol-specific details and modifications to the standard HTTP/1.x environment.
 
@@ -642,7 +706,11 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item Adding the Transfer Encoding extension because leaving this to the application or unspecified can lead to tricky scenarios.
 
+=back
+
 =head2 0.5.Draft
+
+=over 1
 
 =item Adding C<p6sgi.ready> and added the Application Lifecycle section to describe the ideal lifecycle of an application.
 
@@ -658,7 +726,11 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item Added C<p6sgix.header.done> as a new P6SGI extension.
 
+=back
+
 =head2 0.4.Draft
+
+=over
 
 =item Cutting back on some more verbose or unnecessary statements in the standard, trying to stick with just what is important and nothing more.
 
@@ -668,7 +740,11 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item Change the Supply to emit Cool and Blob rather than just Str and Blob.
 
+=back
+
 =head2 0.3.Draft
+
+=over
 
 =item Splitting the standard formally into layers: Application, Server, and Middleware.
 
@@ -682,7 +758,9 @@ Any application server implementing WebSocket MUST adhere to all the requirement
 
 =item Added the Changes section.
 
-=item Use C<p6sgi.> prefixes in the environment rather than C<psgi.>
+=item Use C<p6sgi.> prefixes in the environment rather than C<psgi.>o
+
+=back
 
 =head2 0.2.Draft
 
@@ -691,5 +769,3 @@ This second revision eliminates the legacy standard and requires that all P6SGI 
 =head2 0.1.Draft
 
 This is the first published version. It was heavily influenced by PSGI and included interfaces based on the standard, deferred, and streaming responses of PSGI. Instead of callbacks, however, it used L<Promise> to handle deferred responses and L<Channel> to handle streaming. It mentioned middleware in passing.
-
-=end pod
